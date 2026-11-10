@@ -1,0 +1,478 @@
+{
+ "count-the-critters": {
+  "secs": 15,
+  "rounds": 8,
+  "hint": "Tap each critter and count out loud!",
+  "data": {
+   "animals": [
+    "🐰",
+    "🐻",
+    "🦊",
+    "🐼",
+    "🐸",
+    "🐥",
+    "🐮"
+   ],
+   "min": 1,
+   "max": 9
+  }
+ },
+ "abc-safari": {
+  "secs": 14,
+  "rounds": 8,
+  "hint": "Say the letter and think of the sound it makes!",
+  "data": {
+   "pairs": [
+    [
+     "A",
+     "🐜",
+     "Ant"
+    ],
+    [
+     "B",
+     "🐻",
+     "Bear"
+    ],
+    [
+     "C",
+     "🐱",
+     "Cat"
+    ],
+    [
+     "D",
+     "🐶",
+     "Dog"
+    ],
+    [
+     "E",
+     "🐘",
+     "Elephant"
+    ],
+    [
+     "F",
+     "🐸",
+     "Frog"
+    ],
+    [
+     "G",
+     "🦒",
+     "Giraffe"
+    ],
+    [
+     "H",
+     "🐴",
+     "Horse"
+    ],
+    [
+     "L",
+     "🦁",
+     "Lion"
+    ],
+    [
+     "M",
+     "🐵",
+     "Monkey"
+    ],
+    [
+     "P",
+     "🐼",
+     "Panda"
+    ],
+    [
+     "T",
+     "🐯",
+     "Tiger"
+    ],
+    [
+     "Z",
+     "🦓",
+     "Zebra"
+    ]
+   ]
+  }
+ },
+ "animals-of-cambodia": {
+  "secs": 18,
+  "rounds": 8,
+  "hint": "Think about where each animal lives!",
+  "data": {
+   "questions": [
+    [
+     "Which big animal has a long trunk?",
+     "🐘 Elephant",
+     [
+      "🐸 Frog",
+      "🦜 Parrot",
+      "🐟 Fish"
+     ],
+     "🐘"
+    ],
+    [
+     "Which dolphin lives in the Mekong River?",
+     "🐬 Irrawaddy dolphin",
+     [
+      "🐻‍❄️ Polar bear",
+      "🐧 Penguin",
+      "🦘 Kangaroo"
+     ],
+     "🐬"
+    ],
+    [
+     "Which bird scoops fish with its big beak?",
+     "🦩 Pelican",
+     [
+      "🦉 Owl",
+      "🐔 Chicken",
+      "🦜 Parrot"
+     ],
+     "🦢"
+    ],
+    [
+     "Which tiny insect makes honey?",
+     "🐝 Bee",
+     [
+      "🐛 Caterpillar",
+      "🐞 Ladybug",
+      "🦗 Cricket"
+     ],
+     "🍯"
+    ],
+    [
+     "Which animal pulls the cart in the rice field?",
+     "🐂 Ox",
+     [
+      "🦒 Giraffe",
+      "🐧 Penguin",
+      "🦓 Zebra"
+     ],
+     "🌾"
+    ],
+    [
+     "Which animal lives in Tonle Sap Lake?",
+     "🐟 Fish",
+     [
+      "🐪 Camel",
+      "🦁 Lion",
+      "🦉 Owl"
+     ],
+     "🌊"
+    ],
+    [
+     "Which animal spins soft silk?",
+     "🐛 Silkworm",
+     [
+      "🐊 Crocodile",
+      "🐟 Fish",
+      "🦋 Butterfly"
+     ],
+     "🧵"
+    ],
+    [
+     "Which animal has a long tail and swings in trees?",
+     "🐵 Monkey",
+     [
+      "🐋 Whale",
+      "🐢 Turtle",
+      "🐌 Snail"
+     ],
+     "🌴"
+    ]
+   ]
+  }
+ },
+ "balloon-colors": {
+  "secs": 14,
+  "rounds": 8,
+  "hint": "Look at the color word, then find that balloon!",
+  "data": {
+   "colors": [
+    [
+     "Red",
+     "#ff4d5e"
+    ],
+    [
+     "Blue",
+     "#3d8bff"
+    ],
+    [
+     "Green",
+     "#2fbf63"
+    ],
+    [
+     "Yellow",
+     "#ffc61a"
+    ],
+    [
+     "Purple",
+     "#9a6bff"
+    ],
+    [
+     "Orange",
+     "#ff8a2b"
+    ],
+    [
+     "Pink",
+     "#ff7eb6"
+    ]
+   ]
+  }
+ },
+ "memory-farm": {
+  "secs": 45,
+  "rounds": 3,
+  "hint": "Flip two cards. Find the matching farm friends!",
+  "data": {
+   "animals": [
+    "🐮",
+    "🐷",
+    "🐔",
+    "🐑",
+    "🐴",
+    "🦆",
+    "🐰",
+    "🐐"
+   ],
+   "pairs": [
+    3,
+    4,
+    6
+   ]
+  }
+ },
+ "ocean-quiz": {
+  "secs": 18,
+  "rounds": 8,
+  "hint": "Think about what lives deep in the sea!",
+  "data": {
+   "questions": [
+    [
+     "Which is the biggest animal in the ocean?",
+     "🐳 Blue whale",
+     [
+      "🐠 Clownfish",
+      "🦀 Crab",
+      "🦑 Squid"
+     ],
+     "🌊"
+    ],
+    [
+     "How many arms does an octopus have?",
+     "8",
+     [
+      "4",
+      "6",
+      "10"
+     ],
+     "🐙"
+    ],
+    [
+     "Which sea animal walks sideways?",
+     "🦀 Crab",
+     [
+      "🐬 Dolphin",
+      "🦈 Shark",
+      "🐢 Turtle"
+     ],
+     "🏖️"
+    ],
+    [
+     "Which fish is Nemo?",
+     "🐠 Clownfish",
+     [
+      "🐡 Pufferfish",
+      "🦈 Shark",
+      "🐟 Goldfish"
+     ],
+     "🎬"
+    ],
+    [
+     "Which sea animal has five arms?",
+     "⭐ Starfish",
+     [
+      "🐙 Octopus",
+      "🦀 Crab",
+      "🦐 Shrimp"
+     ],
+     "🌊"
+    ],
+    [
+     "Which sea animal squirts ink?",
+     "🐙 Octopus",
+     [
+      "🐬 Dolphin",
+      "🐳 Whale",
+      "🦈 Shark"
+     ],
+     "🖋️"
+    ],
+    [
+     "Which sea animal breathes air through a blowhole?",
+     "🐬 Dolphin",
+     [
+      "🐟 Tuna",
+      "🦀 Crab",
+      "🦐 Shrimp"
+     ],
+     "💨"
+    ],
+    [
+     "Which sea animal carries a shell on its back?",
+     "🐢 Sea turtle",
+     [
+      "🦈 Shark",
+      "🐬 Dolphin",
+      "🐟 Fish"
+     ],
+     "🏝️"
+    ]
+   ]
+  }
+ },
+ "space-math-race": {
+  "secs": 12,
+  "rounds": 8,
+  "hint": "Count on your fingers if you need to!",
+  "data": {
+   "plusChance": 0.6,
+   "aMin": 2,
+   "aMax": 12,
+   "bMin": 1,
+   "bMax": 9
+  }
+ },
+ "shape-sorter": {
+  "secs": 13,
+  "rounds": 8,
+  "hint": "Count the corners and the sides!",
+  "data": {
+   "shapes": [
+    [
+     "Circle",
+     "🔴"
+    ],
+    [
+     "Square",
+     "🟦"
+    ],
+    [
+     "Triangle",
+     "🔺"
+    ],
+    [
+     "Star",
+     "⭐"
+    ],
+    [
+     "Heart",
+     "❤️"
+    ],
+    [
+     "Diamond",
+     "🔶"
+    ],
+    [
+     "Moon",
+     "🌙"
+    ]
+   ]
+  }
+ },
+ "khmer-letters": {
+  "secs": 15,
+  "rounds": 8,
+  "hint": "Look closely at the curves of the letter!",
+  "data": {
+   "letters": [
+    [
+     "ក",
+     "ka"
+    ],
+    [
+     "ខ",
+     "kha"
+    ],
+    [
+     "គ",
+     "ko"
+    ],
+    [
+     "ឃ",
+     "kho"
+    ],
+    [
+     "ង",
+     "ngo"
+    ],
+    [
+     "ច",
+     "cha"
+    ],
+    [
+     "ឆ",
+     "chha"
+    ],
+    [
+     "ជ",
+     "cho"
+    ],
+    [
+     "ឈ",
+     "chho"
+    ],
+    [
+     "ញ",
+     "nho"
+    ]
+   ]
+  }
+ },
+ "dino-time": {
+  "secs": 15,
+  "rounds": 8,
+  "hint": "Search every corner of the jungle!",
+  "data": {
+   "items": [
+    [
+     "🦖",
+     "T-Rex"
+    ],
+    [
+     "🦕",
+     "Long-neck dino"
+    ],
+    [
+     "🥚",
+     "dino egg"
+    ],
+    [
+     "🦴",
+     "bone"
+    ],
+    [
+     "🌋",
+     "volcano"
+    ],
+    [
+     "🌴",
+     "palm tree"
+    ],
+    [
+     "🐊",
+     "crocodile"
+    ],
+    [
+     "🦎",
+     "lizard"
+    ],
+    [
+     "🌿",
+     "fern"
+    ],
+    [
+     "🪨",
+     "rock"
+    ]
+   ]
+  }
+ }
+}
