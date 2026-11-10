@@ -310,7 +310,7 @@ def dashboard():
 @login_required("admin")
 def reports_summary():
     by_subject = query("SELECT subject, COUNT(*) AS games, COALESCE(SUM(plays),0) AS plays FROM games WHERE status='published' GROUP BY subject ORDER BY plays DESC")
-    daily = query("SELECT substr(created,1,10) AS day, COUNT(*) AS plays, CAST(COALESCE(AVG(score),0) AS DOUBLE PRECISION) AS \"avgScore\" FROM results GROUP BY day ORDER BY day DESC LIMIT 14")
+    daily = query("SELECT substr(created,1,10) AS day, COUNT(*) AS plays, COALESCE(AVG(score),0) AS avgScore FROM results GROUP BY day ORDER BY day DESC LIMIT 14")
     accuracy = query_one("SELECT COALESCE(SUM(correct),0) AS c, COALESCE(SUM(total),0) AS t FROM results")
     return jsonify(
         bySubject=[dict(r) for r in by_subject],
@@ -322,14 +322,14 @@ def reports_summary():
 @bp.get("/admin/system")
 @login_required("admin")
 def system():
-    size = query_one("SELECT pg_database_size(current_database()) AS n")["n"]
+    size = query_one("SELECT COALESCE(SUM(data_length + index_length), 0) AS n FROM information_schema.tables WHERE table_schema = DATABASE()")["n"]
     return jsonify(
         status="ok",
         uptimeSeconds=int(time.time() - STARTED),
         python=sys.version.split()[0],
         platform=platform.platform(),
         databaseBytes=size,
-        database="PostgreSQL",
+        database="MySQL",
         tables={t: count(f"SELECT COUNT(*) AS n FROM {t}") for t in ("users", "games", "results", "live_sessions", "docs")},
         time=now(),
     )

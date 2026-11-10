@@ -1,134 +1,139 @@
 import json
 import os
+import queue
 import re
+import ssl
+import threading
+from urllib.parse import unquote, urlparse
 from datetime import datetime, timezone
 
-import psycopg
-from flask import current_app, g
-from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool
+import pymysql
+from flask import g
+from pymysql import converters
+from pymysql.constants import FIELD_TYPE
+from pymysql.cursors import DictCursor
 from werkzeug.security import generate_password_hash
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'kid',
-    emoji TEXT NOT NULL DEFAULT '🐻',
-    status TEXT NOT NULL DEFAULT 'active',
-    created TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(190) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(32) NOT NULL DEFAULT 'kid',
+    emoji VARCHAR(32) NOT NULL DEFAULT '🐻',
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS games (
-    id SERIAL PRIMARY KEY,
-    slug TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL,
-    title_km TEXT NOT NULL DEFAULT '',
-    emoji TEXT NOT NULL DEFAULT '🎮',
-    gradient TEXT NOT NULL DEFAULT '#dcd3ff,#a592f5',
-    author TEXT NOT NULL DEFAULT 'Critter Team',
-    subject TEXT NOT NULL DEFAULT 'General',
-    age TEXT NOT NULL DEFAULT '4–7',
-    kind TEXT NOT NULL DEFAULT 'Quiz',
-    engine TEXT NOT NULL DEFAULT 'quiz',
-    skin TEXT NOT NULL DEFAULT 'jungle',
-    device TEXT NOT NULL DEFAULT 'phone',
-    questions TEXT NOT NULL DEFAULT '[]',
-    status TEXT NOT NULL DEFAULT 'draft',
-    visibility TEXT NOT NULL DEFAULT 'private',
-    owner_id INTEGER,
-    version INTEGER NOT NULL DEFAULT 1,
-    plays INTEGER NOT NULL DEFAULT 0,
-    rating DOUBLE PRECISION NOT NULL DEFAULT 0,
-    featured INTEGER NOT NULL DEFAULT 0,
-    builtin INTEGER NOT NULL DEFAULT 0,
-    position INTEGER NOT NULL DEFAULT 0,
-    config TEXT NOT NULL DEFAULT '',
-    created TEXT NOT NULL,
-    updated TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(190) NOT NULL UNIQUE,
+    title VARCHAR(255) NOT NULL,
+    title_km VARCHAR(255) NOT NULL DEFAULT '',
+    emoji VARCHAR(32) NOT NULL DEFAULT '🎮',
+    gradient VARCHAR(80) NOT NULL DEFAULT '#dcd3ff,#a592f5',
+    author VARCHAR(255) NOT NULL DEFAULT 'Critter Team',
+    subject VARCHAR(100) NOT NULL DEFAULT 'General',
+    age VARCHAR(20) NOT NULL DEFAULT '4–7',
+    kind VARCHAR(80) NOT NULL DEFAULT 'Quiz',
+    engine VARCHAR(40) NOT NULL DEFAULT 'quiz',
+    skin VARCHAR(40) NOT NULL DEFAULT 'jungle',
+    device VARCHAR(20) NOT NULL DEFAULT 'phone',
+    questions LONGTEXT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    visibility VARCHAR(20) NOT NULL DEFAULT 'private',
+    owner_id INT NULL,
+    version INT NOT NULL DEFAULT 1,
+    plays INT NOT NULL DEFAULT 0,
+    rating DOUBLE NOT NULL DEFAULT 0,
+    featured INT NOT NULL DEFAULT 0,
+    builtin INT NOT NULL DEFAULT 0,
+    position INT NOT NULL DEFAULT 0,
+    config LONGTEXT NULL,
+    created VARCHAR(40) NOT NULL,
+    updated VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS game_versions (
-    id SERIAL PRIMARY KEY,
-    game_id INTEGER NOT NULL,
-    version INTEGER NOT NULL,
-    note TEXT NOT NULL DEFAULT '',
-    snapshot TEXT NOT NULL,
-    created TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    game_id INT NOT NULL,
+    version INT NOT NULL,
+    note VARCHAR(255) NOT NULL DEFAULT '',
+    snapshot LONGTEXT NOT NULL,
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS results (
-    id SERIAL PRIMARY KEY,
-    game_id INTEGER NOT NULL,
-    user_id INTEGER,
-    player TEXT NOT NULL DEFAULT 'Guest',
-    score INTEGER NOT NULL DEFAULT 0,
-    correct INTEGER NOT NULL DEFAULT 0,
-    total INTEGER NOT NULL DEFAULT 0,
-    seconds INTEGER NOT NULL DEFAULT 0,
-    created TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    game_id INT NOT NULL,
+    user_id INT NULL,
+    player VARCHAR(255) NOT NULL DEFAULT 'Guest',
+    score INT NOT NULL DEFAULT 0,
+    correct INT NOT NULL DEFAULT 0,
+    total INT NOT NULL DEFAULT 0,
+    seconds INT NOT NULL DEFAULT 0,
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS live_sessions (
-    id SERIAL PRIMARY KEY,
-    pin TEXT NOT NULL UNIQUE,
-    game_id INTEGER NOT NULL,
-    host_id INTEGER,
-    mode TEXT NOT NULL DEFAULT 'classic',
-    status TEXT NOT NULL DEFAULT 'lobby',
-    current INTEGER NOT NULL DEFAULT 0,
-    created TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pin VARCHAR(16) NOT NULL UNIQUE,
+    game_id INT NOT NULL,
+    host_id INT NULL,
+    mode VARCHAR(40) NOT NULL DEFAULT 'classic',
+    status VARCHAR(20) NOT NULL DEFAULT 'lobby',
+    current INT NOT NULL DEFAULT 0,
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS live_players (
-    id SERIAL PRIMARY KEY,
-    session_id INTEGER NOT NULL,
-    name TEXT NOT NULL,
-    emoji TEXT NOT NULL DEFAULT '🐻',
-    score INTEGER NOT NULL DEFAULT 0,
-    created TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    emoji VARCHAR(32) NOT NULL DEFAULT '🐻',
+    score INT NOT NULL DEFAULT 0,
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS docs (
-    id SERIAL PRIMARY KEY,
-    coll TEXT NOT NULL,
-    data TEXT NOT NULL,
-    created TEXT NOT NULL,
-    updated TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    coll VARCHAR(64) NOT NULL,
+    data LONGTEXT NOT NULL,
+    created VARCHAR(40) NOT NULL,
+    updated VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS purchases (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    reward_id INTEGER NOT NULL,
-    cost INTEGER NOT NULL,
-    created TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    reward_id INT NOT NULL,
+    cost INT NOT NULL,
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS saved_games (
-    user_id INTEGER NOT NULL,
-    game_id INTEGER NOT NULL,
-    created TEXT NOT NULL,
+    user_id INT NOT NULL,
+    game_id INT NOT NULL,
+    created VARCHAR(40) NOT NULL,
     PRIMARY KEY (user_id, game_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS classrooms (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    teacher_id INTEGER NOT NULL,
-    code TEXT NOT NULL UNIQUE,
-    created TEXT NOT NULL
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    teacher_id INT NOT NULL,
+    code VARCHAR(40) NOT NULL UNIQUE,
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS class_members (
-    class_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    created TEXT NOT NULL,
+    class_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created VARCHAR(40) NOT NULL,
     PRIMARY KEY (class_id, user_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS assignments (
-    id SERIAL PRIMARY KEY,
-    class_id INTEGER NOT NULL,
-    game_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    due TEXT NOT NULL DEFAULT '',
-    created TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_ll_docs_coll ON docs(coll);
-CREATE INDEX IF NOT EXISTS idx_ll_games_status ON games(status, visibility);
-CREATE INDEX IF NOT EXISTS idx_ll_results_game ON results(game_id);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    class_id INT NOT NULL,
+    game_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    due VARCHAR(40) NOT NULL DEFAULT '',
+    created VARCHAR(40) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX idx_ll_docs_coll ON docs(coll);
+CREATE INDEX idx_ll_games_status ON games(status, visibility);
+CREATE INDEX idx_ll_results_game ON results(game_id);
 """
 
 BUILTIN_GAMES = [
@@ -170,54 +175,115 @@ def now():
 
 TABLE_NAMES = ["users", "games", "game_versions", "results", "live_sessions", "live_players", "docs", "purchases", "saved_games", "classrooms", "class_members", "assignments"]
 TABLE_SUFFIX = os.environ.get("DB_TABLE_SUFFIX", "_little-learner")
-_TABLE_RE = re.compile(r"\b(FROM|JOIN|INTO|UPDATE|TABLE(?:\s+IF\s+NOT\s+EXISTS)?|ON|TRUNCATE)(\s+)(" + "|".join(TABLE_NAMES) + r")\b(?!\.)", re.I)
-
-
-def table_name(name):
-    return f'"{name}{TABLE_SUFFIX}"' if TABLE_SUFFIX else name
-
-
-def tr(sql):
-    if not TABLE_SUFFIX:
-        return sql
-    return _TABLE_RE.sub(lambda m: m.group(1) + m.group(2) + table_name(m.group(3).lower()), sql)
-
-
-SERIAL_TABLES = {"users", "games", "game_versions", "results", "live_sessions", "live_players", "docs", "purchases", "classrooms", "assignments"}
+_TABLE_RE = re.compile(r"\b(FROM|JOIN|INTO|UPDATE|TABLE(?:\s+IF\s+NOT\s+EXISTS)?|ON|TRUNCATE(?:\s+TABLE)?)(\s+)(" + "|".join(TABLE_NAMES) + r")\b(?!\.)", re.I)
 _pool = None
 
 
-def dsn():
+def table_name(name):
+    return f"`{name}{TABLE_SUFFIX}`"
+
+
+def tr(sql):
+    return _TABLE_RE.sub(lambda m: m.group(1) + m.group(2) + table_name(m.group(3).lower()), sql)
+
+
+def _number(raw):
+    text = raw.decode() if isinstance(raw, bytes) else raw
+    return float(text) if "." in text else int(text)
+
+
+CONVERSIONS = converters.conversions.copy()
+CONVERSIONS[FIELD_TYPE.DECIMAL] = _number
+CONVERSIONS[FIELD_TYPE.NEWDECIMAL] = _number
+
+
+def env(*names, default=""):
+    for name in names:
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return default
+
+
+def settings():
     url = os.environ.get("DATABASE_URL", "").strip()
     if url:
-        return url
-    host = os.environ.get("DB_HOST", "localhost")
-    port = os.environ.get("DB_PORT", "5432")
-    name = os.environ.get("DB_NAME", "little_learner")
-    user = os.environ.get("DB_USER", "postgres")
-    password = os.environ.get("DB_PASSWORD", "")
-    ssl = os.environ.get("DB_SSLMODE", "")
-    parts = [f"host={host}", f"port={port}", f"dbname={name}", f"user={user}"]
-    if password:
-        parts.append(f"password={password}")
-    if ssl:
-        parts.append(f"sslmode={ssl}")
-    return " ".join(parts)
+        parsed = urlparse(url.replace("mysql+pymysql://", "mysql://"))
+        return {
+            "host": parsed.hostname or "localhost",
+            "port": parsed.port or 3306,
+            "user": unquote(parsed.username or ""),
+            "password": unquote(parsed.password or ""),
+            "database": (parsed.path or "").lstrip("/") or env("DB_DATABASE", "DB_NAME", default="little_learner"),
+        }
+    return {
+        "host": env("DB_HOST", default="localhost"),
+        "port": int(env("DB_PORT", default="3306")),
+        "user": env("DB_USERNAME", "DB_USER", default="root"),
+        "password": env("DB_PASSWORD", default=""),
+        "database": env("DB_DATABASE", "DB_NAME", default="little_learner"),
+    }
+
+
+def connect(with_database=True):
+    cfg = settings()
+    if not with_database:
+        cfg["database"] = None
+    extra = {}
+    if os.environ.get("DB_SSLMODE", "").strip().lower() in ("require", "true", "1", "on"):
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        extra["ssl"] = context
+    return pymysql.connect(**cfg, charset="utf8mb4", cursorclass=DictCursor, autocommit=True, conv=CONVERSIONS, connect_timeout=10, **extra)
 
 
 def ensure_database():
-    if os.environ.get("DATABASE_URL", "").strip():
-        return
     try:
-        psycopg.connect(dsn(), connect_timeout=5).close()
+        connect().close()
         return
-    except psycopg.OperationalError as error:
-        if "does not exist" not in str(error):
+    except pymysql.err.OperationalError as error:
+        if error.args[0] != 1049:
             raise
-    name = os.environ.get("DB_NAME", "little_learner")
-    admin = dsn().replace(f"dbname={name}", "dbname=postgres")
-    with psycopg.connect(admin, autocommit=True, connect_timeout=5) as conn:
-        conn.execute(f'CREATE DATABASE "{name}"')
+    name = settings()["database"]
+    conn = connect(False)
+    try:
+        conn.cursor().execute(f"CREATE DATABASE `{name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+    finally:
+        conn.close()
+
+
+class Pool:
+    def __init__(self, size):
+        self.size = size
+        self.made = 0
+        self.idle = queue.LifoQueue()
+        self.lock = threading.Lock()
+
+    def get(self):
+        try:
+            conn = self.idle.get_nowait()
+        except queue.Empty:
+            with self.lock:
+                room = self.made < self.size
+                if room:
+                    self.made += 1
+            if room:
+                try:
+                    return connect()
+                except Exception:
+                    with self.lock:
+                        self.made -= 1
+                    raise
+            conn = self.idle.get(timeout=15)
+        try:
+            conn.ping(reconnect=True)
+        except Exception:
+            conn = connect()
+        return conn
+
+    def put(self, conn):
+        self.idle.put(conn)
 
 
 class Conn:
@@ -226,36 +292,34 @@ class Conn:
 
     def execute(self, sql, args=()):
         sql = tr(sql)
+        cur = self.raw.cursor()
         if args:
-            return self.raw.execute(sql.replace("%", "%%").replace("?", "%s"), list(args))
-        return self.raw.execute(sql)
+            cur.execute(sql.replace("%", "%%").replace("?", "%s"), list(args))
+        else:
+            cur.execute(sql)
+        return cur
 
     def commit(self):
         return None
 
 
-def now():
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
 def get_db():
     if "db" not in g:
-        g.db = Conn(_pool.getconn())
+        g.db = Conn(_pool.get())
     return g.db
 
 
 def close_db(e=None):
     conn = g.pop("db", None)
     if conn is not None:
-        _pool.putconn(conn.raw)
+        _pool.put(conn.raw)
 
 
 def init_app(app):
     global _pool
     ensure_database()
     if _pool is None:
-        _pool = ConnectionPool(dsn(), min_size=1, max_size=int(os.environ.get("DB_POOL_MAX", "10")), kwargs={"autocommit": True, "row_factory": dict_row}, open=True)
-        _pool.wait(timeout=15)
+        _pool = Pool(int(os.environ.get("DB_POOL_MAX", "10") or 10))
     app.teardown_appcontext(close_db)
 
 
@@ -268,18 +332,21 @@ def query_one(sql, args=()):
 
 
 def execute(sql, args=()):
-    conn = get_db()
-    found = re.match(r"\s*INSERT\s+INTO\s+(\w+)", sql, re.I)
-    if found and found.group(1).lower() in SERIAL_TABLES and "returning" not in sql.lower():
-        return conn.execute(sql + " RETURNING id", args).fetchone()["id"]
-    conn.execute(sql, args)
-    return None
+    return get_db().execute(sql, args).lastrowid or None
+
+
+def create_schema(conn):
+    for statement in [part.strip() for part in SCHEMA.split(";") if part.strip()]:
+        try:
+            conn.execute(statement)
+        except pymysql.err.OperationalError as error:
+            if error.args[0] != 1061:
+                raise
 
 
 def init_db():
     conn = get_db()
-    conn.execute(SCHEMA)
-    conn.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS config TEXT NOT NULL DEFAULT ''")
+    create_schema(conn)
     if not query_one("SELECT id FROM users LIMIT 1"):
         seed(conn)
     fill_builtin_config(conn)
@@ -321,7 +388,7 @@ def fill_builtin_config(conn):
     with open(path, encoding="utf-8") as f:
         defaults = json.load(f)
     for slug, cfg in defaults.items():
-        conn.execute("UPDATE games SET config=? WHERE slug=? AND builtin=1 AND config=''", (json.dumps(cfg, ensure_ascii=False), slug))
+        conn.execute("UPDATE games SET config=? WHERE slug=? AND builtin=1 AND (config IS NULL OR config='')", (json.dumps(cfg, ensure_ascii=False), slug))
     conn.commit()
 
 

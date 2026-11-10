@@ -1,6 +1,6 @@
 # Little Learner Backend (Flask)
 
-REST API for the Little Learner platform and web admin / game studio. Flask + PostgreSQL, token auth, CORS enabled.
+REST API for the Little Learner platform and web admin / game studio. Flask + MySQL, token auth, CORS enabled.
 
 ## Run
 
@@ -14,23 +14,25 @@ python run.py
 
 The API runs on http://localhost:8000.
 
-## Database (PostgreSQL)
+## Database (MySQL)
 
-Install PostgreSQL 14 or newer, then set the connection in `.env`:
+Use MySQL 8 (or MariaDB 10.4 or newer, which XAMPP includes). Set the connection in `.env`:
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `DB_HOST` | localhost | Database server |
-| `DB_PORT` | 5432 | Database port |
-| `DB_NAME` | little_learner | Database name (created automatically if it does not exist) |
-| `DB_USER` | postgres | Database user |
-| `DB_PASSWORD` | postgres | Database password |
-| `DB_SSLMODE` | empty | Set to `require` for hosted databases |
+| `DB_PORT` | 3306 | Database port |
+| `DB_NAME` or `DB_DATABASE` | little_learner | Database name (created automatically if it does not exist and the user is allowed to create it) |
+| `DB_USER` or `DB_USERNAME` | root | Database user |
+| `DB_PASSWORD` | empty | Database password (XAMPP's root has none) |
+| `DB_SSLMODE` | empty | Set to `require` if your host needs an encrypted connection |
 | `DB_POOL_MAX` | 10 | Maximum connections kept open |
-| `DB_TABLE_SUFFIX` | `_little-learner` | Added to the end of every table name (for example `users_little-learner`) so these tables never clash with other tables in a shared database. Leave empty for plain names |
-| `DATABASE_URL` | empty | A full connection string. When set it replaces all the `DB_*` values (Northflank and most hosts give you one) |
+| `DB_TABLE_SUFFIX` | `_little-learner` | Added to the end of every table name (for example `users_little-learner`) so these tables never clash with other tables in a shared database |
+| `DATABASE_URL` | empty | A full connection string such as `mysql://user:password@host:3306/dbname`. When set it replaces all the `DB_*` connection values (Northflank gives you one) |
 
-The tables are created and seeded on first start. Other settings: `UPLOAD_FOLDER` (where uploaded images and songs are stored) and `CORS_ORIGINS` (comma separated frontend URLs, `*` allows all).
+Both naming styles work, so Northflank's `DB_DATABASE` and `DB_USERNAME` can be pasted in as they are (`DB_CONNECTION` is ignored). If both names are set, `DB_DATABASE` and `DB_USERNAME` win. Values in `.env` may be wrapped in quotes.
+
+The tables are created and seeded on first start. Other settings: `UPLOAD_FOLDER` (local uploads when Cloudinary is off) and `CORS_ORIGINS` (comma separated frontend URLs, `*` allows all).
 
 ### Images and songs (Cloudinary)
 
@@ -46,21 +48,20 @@ Uploaded images and songs are stored in Cloudinary when these are set in `.env` 
 
 If they are empty the backend saves files in the local `uploads` folder instead. Files already uploaded locally keep working, and new uploads go to Cloudinary. Duplicate names and identical files are still detected before anything is uploaded.
 
-### Move your old SQLite data into PostgreSQL
-
-If you ran an earlier version with SQLite, copy that data once:
+### Copy data into MySQL
 
 ```
-python migrate_sqlite.py                      # reads instance/little_learner.db
-python migrate_sqlite.py path\to\file.db      # or point at another file
-python migrate_sqlite.py --replace            # overwrite a database that already has data
+python migrate_data.py --sqlite                     # old SQLite file, default instance/little_learner.db
+python migrate_data.py --sqlite path\to\file.db      # another SQLite file
+python migrate_data.py --postgres "postgresql://user:password@localhost:5432/little_learner"
+python migrate_data.py --sqlite --replace           # overwrite a MySQL database that already has data
 ```
 
-The script keeps every id, so games, results and users stay linked. Uploaded files stay in the uploads folder.
+The `--postgres` option needs the PostgreSQL driver once: `pip install "psycopg[binary]"`. The script keeps every id, so games, results and users stay linked. Uploaded files are not copied.
 
 ### Production
 
-Run with `gunicorn -w 2 -b 0.0.0.0:$PORT run:app`, set `FLASK_DEBUG=0`, a long random `SECRET_KEY`, and `DATABASE_URL` from your host.
+Run with `gunicorn -w 2 -b 0.0.0.0:$PORT run:app`, set `FLASK_DEBUG=0`, a long random `SECRET_KEY`, and `DATABASE_URL` from your host (a `mysql://` address).
 
 Ports are set in each project's `.env` file:
 

@@ -55,7 +55,7 @@ def analytics():
     )
     daily = query("SELECT substr(created,1,10) AS day, SUM(score) AS points, COUNT(*) AS plays FROM results WHERE user_id=? GROUP BY day ORDER BY day DESC LIMIT 14", (uid,))
     weak = query(
-        "SELECT g.id, g.title, g.emoji, CAST(ROUND(100.0*SUM(r.correct)/NULLIF(SUM(r.total),0)) AS DOUBLE PRECISION) AS accuracy FROM results r JOIN games g ON g.id=r.game_id WHERE r.user_id=? GROUP BY g.id HAVING SUM(r.total) > 0 ORDER BY accuracy ASC LIMIT 5",
+        "SELECT g.id, g.title, g.emoji, ROUND(100.0*SUM(r.correct)/NULLIF(SUM(r.total),0)) AS accuracy FROM results r JOIN games g ON g.id=r.game_id WHERE r.user_id=? GROUP BY g.id HAVING SUM(r.total) > 0 ORDER BY accuracy ASC LIMIT 5",
         (uid,),
     )
     return jsonify(

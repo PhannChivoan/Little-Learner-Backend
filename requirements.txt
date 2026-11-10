@@ -1,5 +1,6 @@
 Flask>=3.0
 flask-cors>=4.0
-psycopg[binary,pool]>=3.2
+PyMySQL>=1.1
+cryptography>=42
 gunicorn>=22.0
 cloudinary>=1.40
