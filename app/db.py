@@ -90,6 +90,27 @@ CREATE TABLE IF NOT EXISTS live_players (
     score INT NOT NULL DEFAULT 0,
     created VARCHAR(40) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS live_state (
+    session_id INT NOT NULL PRIMARY KEY,
+    phase VARCHAR(20) NOT NULL DEFAULT 'lobby',
+    q_index INT NOT NULL DEFAULT 0,
+    phase_started DOUBLE NOT NULL DEFAULT 0,
+    paused_at DOUBLE NULL,
+    seq INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS live_answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL,
+    player_id INT NOT NULL,
+    q_index INT NOT NULL,
+    choice INT NOT NULL,
+    correct INT NOT NULL DEFAULT 0,
+    points INT NOT NULL DEFAULT 0,
+    bonus INT NOT NULL DEFAULT 0,
+    ms INT NOT NULL DEFAULT 0,
+    created VARCHAR(40) NOT NULL,
+    UNIQUE KEY uq_ll_live_answer (session_id, player_id, q_index)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS docs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     coll VARCHAR(64) NOT NULL,
@@ -173,7 +194,7 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-TABLE_NAMES = ["users", "games", "game_versions", "results", "live_sessions", "live_players", "docs", "purchases", "saved_games", "classrooms", "class_members", "assignments"]
+TABLE_NAMES = ["users", "games", "game_versions", "results", "live_sessions", "live_players", "live_state", "live_answers", "docs", "purchases", "saved_games", "classrooms", "class_members", "assignments"]
 TABLE_SUFFIX = os.environ.get("DB_TABLE_SUFFIX", "_little-learner")
 _TABLE_RE = re.compile(r"\b(FROM|JOIN|INTO|UPDATE|TABLE(?:\s+IF\s+NOT\s+EXISTS)?|ON|TRUNCATE(?:\s+TABLE)?)(\s+)(" + "|".join(TABLE_NAMES) + r")\b(?!\.)", re.I)
 _pool = None

@@ -53,6 +53,7 @@ If they are empty the backend saves files in the local `uploads` folder instead.
 ```
 python migrate_data.py --sqlite                     # old SQLite file, default instance/little_learner.db
 python migrate_data.py --sqlite path\to\file.db      # another SQLite file
+python migrate_data.py --mysql "mysql://root@localhost:3306/little_learner"   # another MySQL database
 python migrate_data.py --postgres "postgresql://user:password@localhost:5432/little_learner"
 python migrate_data.py --sqlite --replace           # overwrite a MySQL database that already has data
 ```
@@ -98,7 +99,7 @@ Game studio (creator or higher):
 
 Play: `POST /api/play/results`, `POST /api/play/rate`, `GET /api/play/leaderboard/<game>`, `GET /api/play/history`, `GET /api/play/me/stats`
 
-Live: `POST /api/live/sessions`, `POST /api/live/join`, `GET /api/live/sessions/<pin>`, `POST /api/live/sessions/<pin>/start|next|end|answer`
+Live (Kahoot style, the server runs the timer and moves on by itself): `POST /api/live/sessions` (host), `POST /api/live/join`, `GET /api/live/sessions/<pin>?player=<id>`, `POST /api/live/sessions/<pin>/answer` (player), and the host controls `POST /api/live/sessions/<pin>/start|pause|resume|next|prev|end`. Only Quiz and True / False questions are played live.
 
 Admin (admin or higher unless noted):
 - Users: `GET|POST /api/admin/users`, `PUT|DELETE /api/admin/users/<id>`

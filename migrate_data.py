@@ -27,6 +27,8 @@ TABLES = ["users", "games", "game_versions", "results", "live_sessions", "live_p
 USAGE = """Copy data into the MySQL database set in .env (or DATABASE_URL).
 
   python migrate_data.py --sqlite [path\\to\\file.db]     from an old SQLite file (default instance/little_learner.db)
+  python migrate_data.py --mysql "mysql://user:password@localhost:3306/dbname"
+                                                          from another MySQL database (for example your local XAMPP one)
   python migrate_data.py --postgres "postgresql://user:password@host:5432/dbname"
                                                           from a PostgreSQL database (needs: pip install "psycopg[binary]")
   add --replace to overwrite a MySQL database that already has data
@@ -44,6 +46,35 @@ def read_sqlite(path):
         if not cols:
             return None, []
         return cols, [tuple(r) for r in lite.execute(f"SELECT {', '.join(cols)} FROM {table}")]
+
+    return rows
+
+
+def read_mysql(url):
+    from urllib.parse import unquote, urlparse
+
+    import pymysql
+
+    parsed = urlparse(url.replace("mysql+pymysql://", "mysql://"))
+    src = pymysql.connect(
+        host=parsed.hostname or "localhost",
+        port=parsed.port or 3306,
+        user=unquote(parsed.username or ""),
+        password=unquote(parsed.password or ""),
+        database=(parsed.path or "").lstrip("/"),
+        charset="utf8mb4",
+        conv=db.CONVERSIONS,
+    )
+
+    def rows(table):
+        cur = src.cursor()
+        for name in (f"{table}{db.TABLE_SUFFIX}", table):
+            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=%s ORDER BY ordinal_position", (name,))
+            cols = [r[0] for r in cur.fetchall()]
+            if cols:
+                cur.execute("SELECT " + ", ".join(f"`{c}`" for c in cols) + f" FROM `{name}`")
+                return cols, [tuple(r) for r in cur.fetchall()]
+        return None, []
 
     return rows
 
@@ -69,13 +100,17 @@ def read_postgres(dsn):
 
 def main():
     args = sys.argv[1:]
-    if not args or args[0] not in ("--sqlite", "--postgres"):
+    if not args or args[0] not in ("--sqlite", "--mysql", "--postgres"):
         sys.exit(USAGE)
     replace = "--replace" in args
     rest = [a for a in args[1:] if a != "--replace"]
     if args[0] == "--sqlite":
         default = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance", "little_learner.db")
         read = read_sqlite(rest[0] if rest else default)
+    elif args[0] == "--mysql":
+        if not rest:
+            sys.exit(USAGE)
+        read = read_mysql(rest[0])
     else:
         if not rest:
             sys.exit(USAGE)
@@ -94,6 +129,10 @@ def main():
         cur.execute(db.tr("SELECT COUNT(*) AS n FROM users"))
         if cur.fetchone()["n"] and not replace:
             sys.exit("The MySQL database already has data. Run again with --replace to overwrite it.")
+        check_cols, check_rows = read("users")
+        if not check_rows:
+            sys.exit("The source has no users, so it is probably the wrong database or file. Nothing was changed.")
+        print(f"Source looks good ({len(check_rows)} users). Copying...")
         for table in TABLES:
             target = db.table_name(table)
             cur.execute(f"TRUNCATE TABLE {target}")

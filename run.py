@@ -18,6 +18,10 @@ def load_env():
 
 load_env()
 
+for _key, _value in list(os.environ.items()):
+    if len(_value) >= 2 and _value[0] == _value[-1] and _value[0] in "\"'":
+        os.environ[_key] = _value[1:-1]
+
 from app import create_app
 
 app = create_app()
